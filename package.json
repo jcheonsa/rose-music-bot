@@ -1,0 +1,28 @@
+{
+  "name": "rosebot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "rone.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node rone.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:jcheonsa/Rose-bot.js.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vitalets/google-translate-api": "^4.0.0",
+    "cron": "^1.8.2",
+    "discord.js": "^12.4.1",
+    "ffmpeg-static": "^4.2.1",
+    "mongoose": "^5.10.11",
+    "node-opus": "^0.3.3",
+    "simple-youtube-api": "^5.2.1",
+    "youtube-search": "^1.1.4",
+    "ytdl-core": "^3.4.2"
+  }
+}
