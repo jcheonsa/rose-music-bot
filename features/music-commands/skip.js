@@ -1,6 +1,5 @@
 // Skip module
 
-const { prefix } = require("../../config.json");
 const exe = require("./execute.js");
 
 module.exports = {

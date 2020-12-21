@@ -1,23 +1,21 @@
-// Queue Module
+// check the queue
 
 const Discord = require("discord.js");
-const { prefix, version, build } = require("../../config.json");
 
 module.exports = {
   queue: (message, serverQueue) => {
+    // if a queue doesn't exist for your server
     if (!serverQueue) {
       message.channel.send("There's nothing in queue right now!");
       return;
     }
 
-    if (!serverQueue.songs[1]) {
-      message.channel.send("Check my status to see what's playing!");
-      return;
-    }
-
     if (message.author.bot) return;
 
+    // generate an embed to display the queue
     const gEmbed = (start) => {
+
+      // show songs from position 0 - 10
       const current = serverQueue.songs.slice(start, start + 10);
       const qEmbed = new Discord.MessageEmbed()
         .setAuthor(
@@ -31,6 +29,8 @@ module.exports = {
         )
         .setFooter(`Loop: ${serverQueue.loop ? "on" : "off"}`)
         .setTimestamp();
+        
+        // iterates over each song from 0 - 10 in the queue to get its duration, title, URL, etc.
       current.forEach((songs) => {
         let sD = songs.duration;
         let sDm = sD.minutes;
@@ -57,9 +57,13 @@ module.exports = {
       return qEmbed;
     };
 
+    // send the embed of songs from position 0 - 10
     message.channel.send(gEmbed(0)).then((message) => {
+      // if the queue is less than 10 songs long
       if (serverQueue.songs.length <= 10) return;
       message.react("➡️");
+      
+      // collect the reactions of users to allow them to check out the rest of the queue if over 10 songs in length
       const collector = message.createReactionCollector(
         (reaction, user) =>
           ["⬅️", "➡️"].includes(reaction.emoji.name) && !user.bot,
@@ -67,6 +71,8 @@ module.exports = {
           time: 60000,
         }
       );
+      
+      // let the current index equal 0, and start generating the embed from that position for the next 10 songs
       let cIndex = 0;
       collector.on("collect", (reaction) => {
         message.reactions.removeAll().then(async () => {

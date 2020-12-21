@@ -1,24 +1,26 @@
 // Execute Module
-
 const YouTube = require("simple-youtube-api");
-const { prefix, ytTOKEN, lastFM_api, lastFM_secret, lastFM_username, lastFM_pw } = require("../../config.json");
+const { prefix, ytTOKEN, lastFM_api, lastFM_secret } = require("../../config.json");
 const youtube = new YouTube(ytTOKEN);
 const ytdl = require("ytdl-core");
 var scribble = require('scribble');
 
-var Scrobbler = new scribble(lastFM_api, lastFM_secret, lastFM_username, lastFM_pw);
+var Scrobbler = new scribble(lastFM_api, lastFM_secret);
 
 module.exports = {
-  
+
+  // main playback handler
   async play(guild, song, client, queue) {
     const serverQueue = queue.get(guild.id);
 
+    // if there are no more objects in the queue, safely clear queue
     if (!song) {
       queue.delete(guild.id);
       client.user.setActivity("Smash Bros. Mélé");
       return;
     }
 
+    // set the audio stream using FFMPEG
     const dispatcher = serverQueue.connection
       .play(
         ytdl(
@@ -42,11 +44,11 @@ module.exports = {
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
     serverQueue.textChannel.send(`Start playing: **${song.title}**`);
 
+    // get information on the current song to be scrobbled
     var srcSong = {
       artist: song.artist,
       track: song.title,
     };
-
     Scrobbler.NowPlaying(srcSong);
     Scrobbler.Scrobble(srcSong);
 
@@ -55,6 +57,7 @@ module.exports = {
     });
   },
 
+  // play a non-playlist YouTube video
   async execute(message, client, queue) {
     try {
       const args = message.content.split(" ");
@@ -63,11 +66,13 @@ module.exports = {
       const video = await youtube.getVideo(url);
       const voiceChannel = message.member.voice.channel;
 
+      // check for voice channel connection
       if (!voiceChannel)
         return message.channel.send(
           "You need to be in a voice channel to play music!"
         );
 
+      // make sure rosé has permissions to connect and stream audio to a voice channel
       const permissions = voiceChannel.permissionsFor(message.client.user);
       if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
         return message.channel.send(
@@ -75,6 +80,7 @@ module.exports = {
         );
       }
 
+      // get song information based on YouTube API
       const song = {
         title: video.title,
         url: video.url,
@@ -83,6 +89,7 @@ module.exports = {
         artist: (video.channel.title).split(" - Topic"),
       };
 
+      // create a queue of songs for your server if one doesn't already exist
       if (!serverQueue) {
         const queueContruct = {
           textChannel: message.channel,
@@ -93,11 +100,11 @@ module.exports = {
           playing: true,
           loop: false,
         };
-
         queue.set(message.guild.id, queueContruct);
-
+        // once created, add a song to the back of the queue
         queueContruct.songs.push(song);
 
+        // connect to a voice channel and start playing the song in the first position of queue
         try {
           var connection = await voiceChannel.join();
           queueContruct.connection = connection;
@@ -112,13 +119,15 @@ module.exports = {
           queue.delete(message.guild.id);
           return message.channel.send(err);
         }
+        // if there is already a song playing, then add it to the back of the queue
       } else {
         serverQueue.songs.push(song);
         return message.channel.send(
           `**${song.title}** has been added to the queue!`
         );
       }
-    } catch (e) {
+    } catch {
+      // let the user know if it was a playlist that was added
       message.channel.send("Playlist was added.");
       message.channel.send(
         `Type **${prefix}q** for the list of songs in the playlist!`
@@ -126,6 +135,7 @@ module.exports = {
     }
   },
 
+  // main playlist handler
   async handleVideo(message, client, queue) {
     try {
       const args = message.content.split(" ");
@@ -137,6 +147,7 @@ module.exports = {
         `Loading playlist of **${playlist.videos.length}** songs..`
       );
 
+      // distinguish each subsequent video in the playlist
       for (const video of Object.values(videos)) {
         const video2 = await youtube.getVideoByID(video.id);
         await module.exports.playList(
@@ -148,7 +159,6 @@ module.exports = {
           true
         );
       }
-
       return module.exports.playList(
         video,
         message,
@@ -157,10 +167,12 @@ module.exports = {
         queue
       );
     } catch {
+      // if the link is not a playlist, treat it as an individual video
       module.exports.execute(message, client, queue);
     }
   },
 
+  // build a video from a playlist and set the queue
   async playList(
     video,
     message,
@@ -220,5 +232,5 @@ module.exports = {
     } catch {
       message.channel.send("Something happened just now.");
     }
-  }, // Generates individual videos in a playlist.
+  },
 };

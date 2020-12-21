@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path')
 const startup = require('./src/startup')
 
+// weekly reminder
 function arkRemind() {
   try {
     let arkReplies = [
@@ -27,8 +28,9 @@ function arkRemind() {
   } catch {
     console.log("ArkRS was not found in one server.")
   }
-} // Arknights Reminder function
+}
 
+// Initiate these scripts on bot start up
 client.once("ready", () => {
   // use * to indicate any value of that parameter; seconds 0-59, minutes 0-59, hours 0-23, day of month 1-31, months 0-11 (jan-dec), day of week 0-6 (sun-sat)
   try {
@@ -62,16 +64,17 @@ client.once("ready", () => {
 
 });
 
+// Initiate these scripts on bot reconnect
 client.once("reconnecting", () => {
   console.log("Reconnecting!");
 });
-// Initiate these scripts on bot reconnect
 
+// Initiate these scrips on bot disconnect
 client.once("disconnect", () => {
   console.log("Disconnect!");
 });
-// Initiate these scrips on bot disconnect
 
+// Main playback scripts
 client.on("message", async (message) => {
   // command scripts
   if (message.author.id == myID) return;
@@ -80,9 +83,11 @@ client.on("message", async (message) => {
   const serverQueue = queue.get(message.guild.id);
 
   if (message.content.includes(`${prefix}p`)) {
+
     // play command
     const exe = require("./features/music-commands/execute.js");
     if (message.content.toLowerCase() === `${prefix}pause`) {
+
       // pause command
       const pS = require("./features/music-commands/pr.js");
       pS.pause(message, serverQueue);
@@ -101,22 +106,28 @@ client.on("message", async (message) => {
       message.channel.send("Something went wrong.");
       return;
     }
+
+    // put a link in priority
   } else if (message.content.startsWith(`${prefix}go`)) {
     const pQ = require("./features/music-commands/pQ");
     pQ.priorityQ(message, serverQueue);
     return console.log(`song prioritized`);
-    // } else if (message.content.startsWith(`${prefix}seek`)) {
-    //   const sK = require("./commands/seek.js");
-    //   const args = message.content.split(" ");
-    //   const ms = args[1];
-    //   sK.seek(message, serverQueue, ms);
+
+    // seek
+  } else if (message.content.startsWith(`${prefix}seek`)) {
+    const sK = require("./commands/seek.js");
+    const args = message.content.split(" ");
+    const ms = args[1];
+    return sK.seek(message, serverQueue, ms);
+
+    // remove a song from queue
   } else if (message.content.startsWith(`${prefix}rm`)) {
     const rmS = require("./features/music-commands/remove");
     const songs = serverQueue.songs;
-    rmS.removeSong(message, songs);
+    return rmS.removeSong(message, songs);
   }
 });
-// Main playback scripts
+
 
 client.on("message", async (message) => {
   if (!message.content.startsWith(prefix)) {
@@ -209,16 +220,19 @@ client.on("message", (message) => {
   const spotifySearch = require('./features/spotify-commands/spotify-handler')
   const spotifyFav = require('./features/spotify-commands/favArtist')
 
+  // search up on spotify
   if (command === "sysearch") {
     spotifySearch.search(message)
   }
 
+  // add to your favorites list or playlist
   if (command === "syfav") {
     spotifyFav.checkFav(message)
   }
 
 })
 
+// random message responses/reactions
 client.on("message", (message) => {
 
   const gamerWords = [
@@ -284,5 +298,6 @@ client.on("message", (message) => {
   }
 })
 
-client.login(config.token);
 // Login to Discord
+client.login(config.token);
+
