@@ -1,7 +1,7 @@
 // Queue Module
 
 const Discord = require("discord.js");
-const { prefix, version, build } = require("../config.json");
+const { prefix, version, build } = require("../../config.json");
 
 module.exports = {
   queue: (message, serverQueue) => {
@@ -58,7 +58,7 @@ module.exports = {
     };
 
     message.channel.send(gEmbed(0)).then((message) => {
-      if (serverQueue.length <= 10) return;
+      if (serverQueue.songs.length <= 10) return;
       message.react("➡️");
       const collector = message.createReactionCollector(
         (reaction, user) =>

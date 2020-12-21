@@ -1,6 +1,6 @@
 // Remove song module
 
-const { prefix } = require("../config.json");
+const { prefix } = require("../../config.json");
 
 module.exports = {
   removeSong: (message, array) => {

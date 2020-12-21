@@ -1,11 +1,15 @@
 // Execute Module
 
 const YouTube = require("simple-youtube-api");
-const { prefix, ytTOKEN } = require("../config.json");
+const { prefix, ytTOKEN, lastFM_api, lastFM_secret, lastFM_username, lastFM_pw } = require("../../config.json");
 const youtube = new YouTube(ytTOKEN);
 const ytdl = require("ytdl-core");
+var scribble = require('scribble');
+
+var Scrobbler = new scribble(lastFM_api, lastFM_secret, lastFM_username, lastFM_pw);
 
 module.exports = {
+  
   async play(guild, song, client, queue) {
     const serverQueue = queue.get(guild.id);
 
@@ -37,7 +41,16 @@ module.exports = {
       .on("error", (error) => console.error(error));
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
     serverQueue.textChannel.send(`Start playing: **${song.title}**`);
-    client.user.setActivity(`${song.title}`, {
+
+    var srcSong = {
+      artist: song.artist,
+      track: song.title,
+    };
+
+    Scrobbler.NowPlaying(srcSong);
+    Scrobbler.Scrobble(srcSong);
+
+    client.user.setActivity(`${prefix}help if you're confused`, {
       type: "PLAYING",
     });
   },
@@ -67,9 +80,8 @@ module.exports = {
         url: video.url,
         decription: video.description,
         duration: video.duration,
+        artist: (video.channel.title).split(" - Topic"),
       };
-
-      console.log(`${song.title} was added to the queue`);
 
       if (!serverQueue) {
         const queueContruct = {
@@ -164,6 +176,7 @@ module.exports = {
         title: video.title,
         url: `https://www.youtube.com/watch?v=${video.id}`,
         duration: video.duration,
+        artist: video.channel.title,
       };
       const vidD = video.duration;
       const sM = vidD.minutes;

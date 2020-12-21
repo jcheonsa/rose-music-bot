@@ -1,7 +1,7 @@
 // Priority queue module
 
 const YouTube = require("simple-youtube-api");
-const { ytTOKEN } = require("../config.json");
+const { ytTOKEN } = require("../../config.json");
 const youtube = new YouTube(ytTOKEN);
 
 module.exports = {
