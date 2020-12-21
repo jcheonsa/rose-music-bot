@@ -8,8 +8,8 @@ const express = require('express');
 const srcInit = async (client) => {
 
     const spotifyApi = new SpotifyWebApi({
-        clientId: 'e6dd0c7865bf4bd582bd4ef6e6374f29',
-        clientSecret: 'c3175e067ce545a9829fabd5e09cea6e',
+        clientId: api_key,
+        clientSecret: api_secret,
         redirectUri: 'http://localhost:8888/callback',
     });
 

@@ -43,7 +43,7 @@ client.once("ready", () => {
 
   startup(client)
 
-  // load command handlers on bot start up
+  // load command handler on bot start up
   const baseFile = 'command-handler.js',
     commandBase = require(`./commands/${baseFile}`)
 
