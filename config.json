@@ -4,7 +4,7 @@
 	"youtube_api": "",
 	"version": "Super Saiyan God Rosé",
 	"owner": "JENNIE",
-	"build": "4.4.0.",
+	"build": "4.8.0.",
 	"ytTOKEN": "",
 	"myID": "",
 	"lastFM_api": "",
@@ -12,6 +12,8 @@
 	"spotify_ID": "",
 	"spotify_secret": "",
 	"genius_api": "",
-	"mongoPath":  ""
+	"mongoPath":  "",
+	"instaUser": "",
+	"instaPW": ""
 
 }

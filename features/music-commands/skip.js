@@ -1,5 +1,6 @@
 // Skip module
 
+const { prefix } = require("../../config.json");
 const exe = require("./execute.js");
 
 module.exports = {
@@ -11,16 +12,21 @@ module.exports = {
     if (!serverQueue)
       return message.channel.send("There is no song that I could skip!");
     try {
-      //serverQueue.connection.dispatcher.end();
-      //console.log(`a song was skipped`);
+      message.channel
+        .send("Song was skipped.")
+        .then((message) =>
+          message.delete({
+            timeout: 5000,
+          })
+        )
+        .catch();
       serverQueue.songs
         .shift()
         .then(exe.play(message.guild, serverQueue.songs[0], client, queue));
     } catch (e) {
-      // message.channel.send(
-      //     `I'm having trouble skipping, use **${prefix}restore** to repair!`
-      // );
-      console.log("Song was skipped.");
+      message.channel.send(
+        `I'm having trouble skipping, use **${prefix}restore** to repair!`
+      );
     }
   },
 };

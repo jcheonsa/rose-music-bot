@@ -1,51 +1,72 @@
-// check the queue
+// Queue Module
 
 const Discord = require("discord.js");
+const { prefix, version, build } = require("../../config.json");
 
 module.exports = {
   queue: (message, serverQueue) => {
-    // if a queue doesn't exist for your server
+
     if (!serverQueue) {
       message.channel.send("There's nothing in queue right now!");
       return;
     }
 
+    if (!serverQueue.songs[1]) {
+      message.channel.send("Check my status to see what's playing!");
+      return;
+    }
+
     if (message.author.bot) return;
 
-    // generate an embed to display the queue
-    const gEmbed = (start) => {
+    console.log(serverQueue)
 
-      // show songs from position 0 - 10
+    const gEmbed = (start) => {
       const current = serverQueue.songs.slice(start, start + 10);
       const qEmbed = new Discord.MessageEmbed()
-        .setAuthor(
-          `Rosé-bot Songs ${start}-${start + 9} out of ${
-            serverQueue.songs.length
-          }`
-        )
-        .setColor("RANDOM")
+        .setColor("#cc8bc7")
         .setThumbnail(
           "https://thumbs.gfycat.com/QuaintPotableGenet-max-1mb.gif"
         )
         .setFooter(`Loop: ${serverQueue.loop ? "on" : "off"}`)
         .setTimestamp();
-        
-        // iterates over each song from 0 - 10 in the queue to get its duration, title, URL, etc.
+
+      if (serverQueue.songs.length <= 10) {
+        qEmbed.setAuthor(
+          `Rosé-bot Songs ${start + 1}-${serverQueue.songs.length} out of ${serverQueue.songs.length
+          }`
+        )
+      } else {
+        qEmbed.setAuthor(
+          `Rosé-bot Songs ${start + 1}-${start + 10} out of ${serverQueue.songs.length
+          }`
+        )
+      }
+
+      let position = (start + 1)
+      let arr = [];
+      // run for each video in the array
       current.forEach((songs) => {
         let sD = songs.duration;
+        let sDh = sD.hours;
         let sDm = sD.minutes;
         let sDs = sD.seconds;
+        // uniform video duration
         if (sDs.toString().length == 1) {
           sDs = "0" + sDs;
         }
-        qEmbed.addField(
-          `\u200b`,
-          `**${start++})** ` +
-            `**[${songs.title}](${songs.url})**` +
-            `  ${sDm}:${sDs}`
+        if (sDm.toString().length == 1) {
+          sDm = "0" + sDm;
+        }
+        if (sDh.toString().length == 1) {
+          sDh = "0" + sDh;
+        }
+        arr.push(
+          `\`\`${position++})\`\` ` +
+          `**[${songs.title}](${songs.url})**` +
+          `  \`\`duration: ${sDh}:${sDm}:${sDs}\`\``
         );
       });
-      qEmbed.addField(`\u200b`, `\u200b`);
+      qEmbed.setDescription(arr)
       qEmbed.addField(
         "Now Playing:",
         `** [${serverQueue.songs[0].title}](${serverQueue.songs[0].url})**`
@@ -57,13 +78,9 @@ module.exports = {
       return qEmbed;
     };
 
-    // send the embed of songs from position 0 - 10
     message.channel.send(gEmbed(0)).then((message) => {
-      // if the queue is less than 10 songs long
       if (serverQueue.songs.length <= 10) return;
       message.react("➡️");
-      
-      // collect the reactions of users to allow them to check out the rest of the queue if over 10 songs in length
       const collector = message.createReactionCollector(
         (reaction, user) =>
           ["⬅️", "➡️"].includes(reaction.emoji.name) && !user.bot,
@@ -71,8 +88,6 @@ module.exports = {
           time: 60000,
         }
       );
-      
-      // let the current index equal 0, and start generating the embed from that position for the next 10 songs
       let cIndex = 0;
       collector.on("collect", (reaction) => {
         message.reactions.removeAll().then(async () => {

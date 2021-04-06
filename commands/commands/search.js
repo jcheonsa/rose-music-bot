@@ -1,14 +1,12 @@
-// Search Module
+// search individual videos using youtube-api
 
 const Discord = require("discord.js");
-const search = require("youtube-search");
-const { prefix, youtube_api } = require("../../config.json");
+const search = require('ytsr')
+const { prefix } = require('../../config.json')
 
 const opts = {
-  maxResults: 7,
-  key: youtube_api,
-  type: "video",
-};
+  limit: 10
+}
 
 module.exports = {
 
@@ -16,26 +14,42 @@ module.exports = {
   minArgs: 1,
   expectedArgs: `**<object to search up>**`,
   callback:
+
     async (message) => {
-      const args = message.content.split(`${prefix}search`)
+
+      message.channel.startTyping();
+
+      const args = message.content.substring(8)
+      const toLookup = args
+
+      const filters1 = await search.getFilters(toLookup)
+      const filter1 = filters1.get('Type').get('Video')
+      const filters2 = await search.getFilters(filter1.url)
+      const filter2 = filters2.get('Features').get('Live');
+
+      let results = await search(filter1.url, opts);
+
+
       try {
-        let results = await search(args, opts)
         if (results) {
-          let youtubeResults = results.results;
+          let youtubeResults = results.items;
           let i = 0;
           let titles = youtubeResults.map((result) => {
             i++;
-            return `\`\`${i})\`\`` + result.title;
+            return `\`\`${i})\`\`` + ` ${result.title}` + ` by ${result.author.name}` + `  \`\`duration: ${result.duration}\`\``;
           });
-          message.channel
-            .send({
+
+          message.channel.send(
+            {
               embed: {
-                title: "Select the song by typing it's number!",
+                title: "Select a song to play by typing it's number!",
                 description: titles.join(`**\n**`),
-                color: "RANDOM",
+                color: "#cc8bc7",
+                footer: "Rosé-bot (ft. youtube-api)"
               },
-            })
-            .catch((err) => console.log(err));
+            }
+          )
+            .catch((err) => console.log(err))
 
           let filter = (m) => m.author.id === message.author.id;
           let query = await message.channel.awaitMessages(filter, {
@@ -49,19 +63,10 @@ module.exports = {
             message.channel.send("Invalid selection." + " Search cancelled.");
             console.log("search was cancelled");
             return;
-          } 
+          }
 
-          embedMsg = new Discord.MessageEmbed()
-            .setAuthor("Added to the queue: ")
-            .setTitle(`${selected.title}`)
-            .setURL(`${selected.link}`)
-            .setDescription(`${selected.description}`)
-            .setThumbnail(`${selected.thumbnails.default.url}`)
-            .setColor("RANDOM");
-
-          message.channel.send(embedMsg);
           message.channel
-            .send(`${prefix}p ` + `${selected.link}`)
+            .send(`${prefix}p ` + `${selected.url}`)
             .then((message) =>
               message.delete({
                 timeout: 100,
@@ -76,7 +81,8 @@ module.exports = {
             timeout: 6000,
           })
         );
+      } finally {
+        message.channel.stopTyping();
       }
-      return;
     },
 };

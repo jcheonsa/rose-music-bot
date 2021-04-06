@@ -3,7 +3,9 @@
 const YouTube = require("simple-youtube-api");
 const { ytTOKEN } = require("../../config.json");
 const youtube = new YouTube(ytTOKEN);
+const Discord = require("discord.js");
 
+// adds song to the Up Next position in queue
 module.exports = {
   async priorityQ(message, serverQueue) {
     try {
@@ -13,11 +15,21 @@ module.exports = {
       const song = {
         title: video.title,
         url: video.url,
-        decription: video.description,
+        description: video.description,
+        thumbnail: video.thumbnails.high.url,
         duration: video.duration,
       };
       serverQueue.songs.splice(1, 0, song);
-      return message.channel.send(`**${song.title}** has been prioritized!`);
+
+      selectEmbed = new Discord.MessageEmbed()
+        .setAuthor("Song has been prioritized:")
+        .setTitle(`${song.title}`)
+        .setURL(`${song.url}`)
+        .setThumbnail(`${song.thumbnail}`)
+        .setColor("#cc8bc7")
+        .setDescription(`\`\`position in queue:\`\` Up Next`);
+
+      return message.channel.send(selectEmbed);
     } catch {
       return message.channel.send(`Error in your submission`);
     }

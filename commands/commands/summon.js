@@ -1,8 +1,8 @@
-// Summon Module
+// Connect Rosé to your voice channel
 
 module.exports = {
 
-  commands: ['summon'],
+  commands: ['summon', 'connect', 'start'],
   callback:
     (message) => {
       const voiceChannel = message.member.voice.channel;

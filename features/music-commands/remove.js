@@ -7,7 +7,7 @@ module.exports = {
     const rm = message.content.split(" ");
     try {
       if (Number.isInteger(+rm[1])) {
-        let removed = array.splice(rm[1], 1);
+        let removed = array.splice((rm[1] - 1), 1);
         let rmSong = rm[1];
         removed;
         message.channel.send(

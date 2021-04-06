@@ -1,5 +1,7 @@
 // Execute Module
+
 const YouTube = require("simple-youtube-api");
+const Discord = require("discord.js");
 const { prefix, ytTOKEN, lastFM_api, lastFM_secret } = require("../../config.json");
 const youtube = new YouTube(ytTOKEN);
 const ytdl = require("ytdl-core");
@@ -9,55 +11,97 @@ var Scrobbler = new scribble(lastFM_api, lastFM_secret);
 
 module.exports = {
 
-  // main playback handler
+  // takes a valid song URL and streams the audio
   async play(guild, song, client, queue) {
     const serverQueue = queue.get(guild.id);
 
-    // if there are no more objects in the queue, safely clear queue
+    // if no song is selected, run this script
     if (!song) {
       queue.delete(guild.id);
-      client.user.setActivity("Smash Bros. Mélé");
+      client.user.setPresence({
+        activity: {
+          name: `${client.guilds.cache.map((guild) => guild.memberCount).reduce((p, c) => p + c)} users`,
+          type: 'LISTENING',
+        },
+        status: 'idle',
+      })
+
       return;
     }
 
-    // set the audio stream using FFMPEG
+    // set the ytdl object parameters
+    const ytdlOptions = {
+      highWaterMark: 1 << 25,
+      quality: "highestaudio",
+      filter: "audioonly",
+      bitrate: "auto",
+    }
+
+    // if the song url contains a timestamp, add a time marker in the ytdl object parameters
+    if (song.url.includes(`t=`)) {
+      var timestamp = song.url.split(`t=`)[1]
+      var streamOptions = {
+        seek: timestamp,
+        highWaterMark: 1
+      }
+    } else {
+      var streamOptions = {
+        seek: 0,
+        highWaterMark: 1
+      }
+    }
+    // construct audio dispatcher (bind to specified guild)
     const dispatcher = serverQueue.connection
       .play(
         ytdl(
           song.url,
-          {
-            highWaterMark: 1 << 25,
-          },
-          {
-            type: "opus",
-            quality: "highestaudio",
-            filter: "audioonly",
-            bitrate: "auto",
-          }
-        )
-      ) // {highWaterMark: 1024*1024*10}
+          ytdlOptions
+        ), streamOptions
+      )
+      // once a song is finished, run this script
       .on("finish", () => {
         if (!serverQueue.loop) serverQueue.songs.shift();
         module.exports.play(guild, serverQueue.songs[0], client, queue);
       })
       .on("error", (error) => console.error(error));
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-    serverQueue.textChannel.send(`Start playing: **${song.title}**`);
 
-    // get information on the current song to be scrobbled
+    // if song url contains a timestamp, give a customized notice to music channel
+    if (song.url.includes(`t=`)) {
+      if (timestamp < 60) {
+        if (timestamp.toString().length == 1) {
+          serverQueue.textChannel.send(`Start playing: **${song.title}** from **00:0${timestamp}**`);
+        } else {
+          serverQueue.textChannel.send(`Start playing: **${song.title}** from **00:${timestamp}**`);
+        }
+      } else {
+        let min = Math.floor(timestamp / 60)
+        let sec = timestamp % 60
+        serverQueue.textChannel.send(`Start playing: **${song.title}** from **${min}:${sec}**`);
+      }
+    } else {
+      serverQueue.textChannel.send(`Start playing: **${song.title}**`);
+    }
     var srcSong = {
       artist: song.artist,
       track: song.title,
     };
+
+    // scrobble playhistory to lastFM
     Scrobbler.NowPlaying(srcSong);
     Scrobbler.Scrobble(srcSong);
 
-    client.user.setActivity(`${prefix}help if you're confused`, {
-      type: "PLAYING",
-    });
+    client.user.setPresence({
+      activity: {
+        name: `music`,
+        type: 'LISTENING',
+
+      },
+      status: 'online',
+    })
   },
 
-  // play a non-playlist YouTube video
+  // handles individual urls
   async execute(message, client, queue) {
     try {
       const args = message.content.split(" ");
@@ -66,30 +110,39 @@ module.exports = {
       const video = await youtube.getVideo(url);
       const voiceChannel = message.member.voice.channel;
 
-      // check for voice channel connection
       if (!voiceChannel)
         return message.channel.send(
           "You need to be in a voice channel to play music!"
         );
 
-      // make sure rosé has permissions to connect and stream audio to a voice channel
       const permissions = voiceChannel.permissionsFor(message.client.user);
       if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
         return message.channel.send(
           "I need the permissions to join and speak in your voice channel!"
         );
       }
-
-      // get song information based on YouTube API
-      const song = {
-        title: video.title,
-        url: video.url,
-        decription: video.description,
-        duration: video.duration,
-        artist: (video.channel.title).split(" - Topic"),
-      };
-
-      // create a queue of songs for your server if one doesn't already exist
+      // if timestamped url, include the entire url for the play module to process
+      if (url.includes("t=")) {
+        var song = {
+          title: video.title,
+          url: url,
+          decription: video.description,
+          duration: video.duration,
+          thumbnail: video.thumbnails.high.url,
+          artist: (video.channel.title).split(" - Topic"),
+        };
+      } else {
+        // if not timestamped, send url to the vide handler module
+        var song = {
+          title: video.title,
+          url: video.url,
+          description: video.description,
+          duration: video.duration,
+          thumbnail: video.thumbnails.high.url,
+          artist: (video.channel.title).split(" - Topic"),
+        };
+      }
+      // if no queue, build and bind queue to a text & voice channel within corresponding guild
       if (!serverQueue) {
         const queueContruct = {
           textChannel: message.channel,
@@ -100,11 +153,12 @@ module.exports = {
           playing: true,
           loop: false,
         };
+
         queue.set(message.guild.id, queueContruct);
-        // once created, add a song to the back of the queue
+        // push this song to array
         queueContruct.songs.push(song);
 
-        // connect to a voice channel and start playing the song in the first position of queue
+        // attempt to connect to voice channel
         try {
           var connection = await voiceChannel.join();
           queueContruct.connection = connection;
@@ -119,23 +173,42 @@ module.exports = {
           queue.delete(message.guild.id);
           return message.channel.send(err);
         }
-        // if there is already a song playing, then add it to the back of the queue
       } else {
+
+        // send a message when successfully adding a song
+        var queuePOS = serverQueue.songs.length
+        console.log(song)
+        console.log(serverQueue)
+        selectEmbed = new Discord.MessageEmbed()
+          .setAuthor("Added to the queue: ")
+          .setTitle(`${song.title}`)
+          .setURL(`${song.url}`)
+          .setThumbnail(`${song.thumbnail}`)
+          .setColor("#cc8bc7");
+
+        if (queuePOS === 1) {
+          selectEmbed.setDescription(`\`\`position in queue:\`\` Up Next`)
+        } else {
+          selectEmbed.setDescription(`\`\`position in queue:\`\` ${serverQueue.songs.length}`)
+        }
+        message.channel.send(selectEmbed)
+
         serverQueue.songs.push(song);
         return message.channel.send(
           `**${song.title}** has been added to the queue!`
         );
       }
-    } catch {
-      // let the user know if it was a playlist that was added
+    } catch (e) {
       message.channel.send("Playlist was added.");
       message.channel.send(
-        `Type **${prefix}q** for the list of songs in the playlist!`
+        `Type **${prefix}queue/q** for the list of songs in the playlist!`
       );
+    } finally {
+
     }
   },
 
-  // main playlist handler
+  // primarily handles playlists
   async handleVideo(message, client, queue) {
     try {
       const args = message.content.split(" ");
@@ -147,7 +220,6 @@ module.exports = {
         `Loading playlist of **${playlist.videos.length}** songs..`
       );
 
-      // distinguish each subsequent video in the playlist
       for (const video of Object.values(videos)) {
         const video2 = await youtube.getVideoByID(video.id);
         await module.exports.playList(
@@ -159,6 +231,7 @@ module.exports = {
           true
         );
       }
+
       return module.exports.playList(
         video,
         message,
@@ -167,12 +240,11 @@ module.exports = {
         queue
       );
     } catch {
-      // if the link is not a playlist, treat it as an individual video
       module.exports.execute(message, client, queue);
     }
   },
 
-  // build a video from a playlist and set the queue
+  // generates individual videos from the playlist url
   async playList(
     video,
     message,
@@ -181,6 +253,8 @@ module.exports = {
     queue,
     playlist = false
   ) {
+
+    // check for an existing music queue in the guild
     try {
       const serverQueue = queue.get(message.guild.id);
       const song = {
@@ -188,11 +262,10 @@ module.exports = {
         title: video.title,
         url: `https://www.youtube.com/watch?v=${video.id}`,
         duration: video.duration,
+        thumbnail: video.thumbnails.high.url,
         artist: video.channel.title,
       };
       const vidD = video.duration;
-      const sM = vidD.minutes;
-      const sS = vidD.seconds;
 
       if (!serverQueue) {
         const queueContruct = {
@@ -225,7 +298,7 @@ module.exports = {
         }
       } else {
         serverQueue.songs.push(song);
-        console.log(`${song.title}` + ` ${sM}:${sS}`);
+        // if playlist url, loop the script
         if (playlist) return;
       }
       return;

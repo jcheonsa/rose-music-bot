@@ -1,7 +1,7 @@
 {
   "name": "rosebot",
-  "version": "1.0.0",
-  "description": "",
+  "version": "4.8.0",
+  "description": "streams audio to VCs, translates inputs, browse spotify and instagram, etc.",
   "main": "rone.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -15,14 +15,20 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@vitalets/google-translate-api": "^4.0.0",
+    "@vitalets/google-translate-api": "^5.1.0",
     "cron": "^1.8.2",
     "discord.js": "^12.4.1",
+    "express": "^4.17.1",
     "ffmpeg-static": "^4.2.1",
-    "mongoose": "^5.10.11",
+    "genius-lyrics": "^4.2.1",
+    "instagram-web-api": "^2.2.2",
+    "lastfmapi": "^0.1.1",
+    "mongoose": "^5.11.7",
     "node-opus": "^0.3.3",
+    "scribble": "0.0.5",
     "simple-youtube-api": "^5.2.1",
-    "youtube-search": "^1.1.4",
-    "ytdl-core": "^3.4.2"
+    "spotify-web-api-node": "^5.0.0",
+    "ytdl-core": "^4.5.0",
+    "ytsr": "^3.3.1"
   }
 }

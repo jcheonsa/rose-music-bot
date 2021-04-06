@@ -5,7 +5,7 @@ const { prefix, version, build } = require("../../config.json");
 
 module.exports = {
 
-  commands: ['help', 'hp'],
+  commands: ['help', 'hp', 'info'],
   minArgs: 0,
   maxArgs: 0,
   callback:
@@ -14,44 +14,26 @@ module.exports = {
         .setColor("RANDOM")
         .setTitle("Rosé commands")
         .setThumbnail("https://thumbs.gfycat.com/QuaintPotableGenet-max-1mb.gif")
-        .setDescription(`BLACKPINK sucks. \n Debate me <@104482123125108736>`)
-        .addField(
-          `**${prefix}summon**`,
-          " call me over  to your voice channel ;)."
-        )
-        .addField(
-          `**${prefix}p**`,
-          " copy/paste a YouTube URL after p, to add a song to the queue."
-        )
-        .addField(`**${prefix}skip**`, " skips current song.")
-        .addField(`**${prefix}q**`, " shows queue.")
-        .addField(`**${prefix}shuffle**`, " shuffles the queue.")
-        .addField(
-          `**${prefix}go**`,
-          " place a song in Up Next: position in queue."
-        )
-        .addField(`**${prefix}loop**`, " loops the current song.")
-        .addField(`**${prefix}pause/resume**`, " pauses/resumes playback.")
-        .addField(
-          `**${prefix}rm**`,
-          " type an integer to remove the song in that queue position."
-        )
-        .addField(`**${prefix}stop**`, " deletes the entire queue.")
-        .addField(
-          `**${prefix}search**`,
-          " search up something to add using YouTube's search API."
-        )
-        .addField(
-          `**${prefix}lyrics**`,
-          " search for the lyrics of a song."
-        )
-        .addField(
-          `**${prefix}sysearch**`,
-          " search up artists using Spotify API"
-        )
-        .addField(
-          `**${prefix}syfav**`,
-          " check your favorite artists list using Spotify API"
+        .setDescription(
+          `BLACKPINK sucks. \n Debate me <@104482123125108736> \n
+          \`\`${prefix}summon/connect\`\` - call me over to your voice channel ;) \n
+          \`\`${prefix}play/p\`\` - copy/paste a YouTube URL to add a song to the queue. \n
+          \`\`${prefix}skip\`\` - skips the current song. \n
+          \`\`${prefix}queue/q\`\` - shows queue. \n
+          \`\`${prefix}shuffle\`\` - shuffles the queue. \n
+          \`\`${prefix}go\`\` - place a song in Up Next: position in queue. \n
+          \`\`${prefix}pause/resume\`\` - pauses/resumes playback. \n
+          \`\`${prefix}loop\`\` - loops the current song. (toggle) \n
+          \`\`${prefix}rm\`\` - type an integer to remove the song in that queue position. \n
+          \`\`${prefix}stop\`\` - deletes the entire queue. \n
+          \`\`${prefix}nowplaying/np\`\` - check what's currently playing. \`\`wip\`\`\n
+          \`\`${prefix}seek\`\` - followed by a timestamp. \n
+          \`\`${prefix}search/plsearch\`\` - search up a song or playlist on YouTube to add to the queue. \n
+          \`\`${prefix}lyrics\`\` - search for the lyrics of a song. \n
+          \`\`${prefix}sysearch/syfav\`\` - search up artists using the Spotify API. \`\`wip\`\`\n
+          \`\`${prefix}translate\`\` - learn how to use the google-translate-api. \`\`wip\`\`\n
+          \`\`${prefix}insta\`\` - search up public Instagram accounts. \`\`wip\`\`\n
+          `
         )
         .setTimestamp()
         .setFooter(

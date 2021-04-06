@@ -10,6 +10,8 @@ const fs = require('fs');
 const path = require('path')
 const startup = require('./src/startup')
 
+require('events').EventEmitter.defaultMaxListeners = 15;
+
 // weekly reminder
 function arkRemind() {
   try {
@@ -76,6 +78,7 @@ client.once("disconnect", () => {
 
 // Main playback scripts
 client.on("message", async (message) => {
+
   // command scripts
   if (message.author.id == myID) return;
   if (!message.content.startsWith(prefix)) return;
@@ -83,11 +86,9 @@ client.on("message", async (message) => {
   const serverQueue = queue.get(message.guild.id);
 
   if (message.content.includes(`${prefix}p`)) {
-
     // play command
     const exe = require("./features/music-commands/execute.js");
     if (message.content.toLowerCase() === `${prefix}pause`) {
-
       // pause command
       const pS = require("./features/music-commands/pr.js");
       pS.pause(message, serverQueue);
@@ -95,6 +96,13 @@ client.on("message", async (message) => {
     }
     try {
       if (
+        message.content.includes(
+          `${prefix}play `,
+          /^(?!.*\?.*\bv=)https:\/\/www\.youtube\.com\/.*\?.*\blist=.*$/
+        )
+      ) {
+        exe.handleVideo(message, client, queue);
+      } else if (
         message.content.includes(
           `${prefix}p `,
           /^(?!.*\?.*\bv=)https:\/\/www\.youtube\.com\/.*\?.*\blist=.*$/
@@ -106,29 +114,23 @@ client.on("message", async (message) => {
       message.channel.send("Something went wrong.");
       return;
     }
-
-    // put a link in priority
   } else if (message.content.startsWith(`${prefix}go`)) {
     const pQ = require("./features/music-commands/pQ");
     pQ.priorityQ(message, serverQueue);
     return console.log(`song prioritized`);
-
-    // seek
   } else if (message.content.startsWith(`${prefix}seek`)) {
-    const sK = require("./commands/seek.js");
+    const sK = require("./features/music-commands/seek");
     const args = message.content.split(" ");
     const ms = args[1];
-    return sK.seek(message, serverQueue, ms);
-
-    // remove a song from queue
+    sK.seek(message, serverQueue, ms);
   } else if (message.content.startsWith(`${prefix}rm`)) {
     const rmS = require("./features/music-commands/remove");
     const songs = serverQueue.songs;
-    return rmS.removeSong(message, songs);
+    rmS.removeSong(message, songs);
   }
 });
 
-
+// Client messaging scripts
 client.on("message", async (message) => {
   if (!message.content.startsWith(prefix)) {
     return;
@@ -141,71 +143,87 @@ client.on("message", async (message) => {
   if (command === "lyrics") {
     const genius = require('./features/music-commands/lyrics')
     genius.lyrics(message)
-  }
+  } else
 
-  if (command === "restore") {
-    const rez = require("./features/music-commands/restore.js");
-    rez.restore(message, client, queue, serverQueue);
-  } // restore queue
+    if (command === "restore") {
+      const rez = require("./features/music-commands/restore.js");
+      rez.restore(message, client, queue, serverQueue);
+    } else // restore queue
 
-  if (command === "resume") {
-    const rS = require("./features/music-commands/pr.js");
-    rS.resume(message, serverQueue);
-  } // resume playback
+      if (command === "resume") {
+        const rS = require("./features/music-commands/pr.js");
+        rS.resume(message, serverQueue);
+      } else // resume playback
 
-  if (command === "q") {
-    const qM = require("./features/music-commands/queue");
-    qM.queue(message, serverQueue);
-  } // call serverQueue
+        if (command === "q" || command === "queue") {
+          const qM = require("./features/music-commands/queue");
+          qM.queue(message, serverQueue);
+        } else // call serverQueue
 
-  if (command === "lfmlove") {
-    const lfmlove = require('./features/lfm-commands/lastfmLove');
-    lfmlove.love(message, serverQueue);
-  }
+          if (command === "translate") {
+            const tS = require("./features/misc-commands/translate");
+            tS.tHelp(message, command);
+          } else
 
-  if (command === "shuffle") {
-    const shuffle = require("./features/music-commands/shuffle.js");
-    const songs = serverQueue.songs;
-    shuffle.shuffle(songs);
-    return message.channel.send(
-      `Playlist shuffled! Type **${prefix}q** to check the new playlist!`
-    );
-  } // shuffle serverQueue
+            if (command === "lfmlove") {
+              const lfmlove = require('./features/lfm-commands/lastfmLove');
+              lfmlove.love(message, serverQueue);
+            } else
 
-  if (command === "stop") {
-    const stop = require("./features/music-commands/stop.js");
-    stop.stop(message, serverQueue);
-    return;
-  } // deletes serverQueue
+              if (command === "shuffle") {
+                const shuffle = require("./features/music-commands/shuffle.js");
+                const songs = serverQueue.songs;
+                shuffle.shuffle(songs);
+                return message.channel.send(
+                  `Playlist shuffled! Type **${prefix}q** to check the new playlist!`
+                );
+              } else// shuffle serverQueue
 
-  if (command === "skip") {
-    const skip = require("./features/music-commands/skip.js");
-    skip.skip(message, serverQueue, client, queue);
-    return;
-  } // skip current song
+                if (command === "stop" || command === "quit") {
+                  const stop = require("./features/music-commands/stop.js");
+                  stop.stop(message, serverQueue);
+                  return;
+                } else// deletes serverQueue
 
-  if (command === "loop") {
-    const lS = require("./features/music-commands/loop.js");
-    lS.loop(message, queue);
-  }
+                  if (command === "skip") {
+                    const skip = require("./features/music-commands/skip.js");
+                    skip.skip(message, serverQueue, client, queue);
+                    return;
+                  } else// skip current song
 
-  if (command === "np") {
-    try {
-      const cMS = require("./util/convertMS.js");
-      const ms = serverQueue.connection.dispatcher.streamTime;
-      cMS.convertMS(message, serverQueue, ms);
-    } catch {
-      message.channel.send("There is nothing playing right now.");
-    }
-  }
+                    if (command === "loop") {
+                      const lS = require("./features/music-commands/loop.js");
+                      lS.loop(message, queue);
+                    } else
 
-  if (command === "test") {
-    const lfm = require('./lastFM/lastfm')
-    lfm.test(message)
+                      if (command === "np") {
+                        try {
+                          const cMS = require("./util/convertMS.js");
+                          const ms = serverQueue.connection.dispatcher.streamTime;
+                          cMS.convertMS(message, serverQueue, ms);
+                        } catch {
+                          message.channel.send("There is nothing playing right now.");
+                        }
+                      } else // now playing 
+
+                        if (command === "instauser") {
+                          const insta = require('./features/misc-commands/instagram-handler')
+                          insta.searchUser(message, args)
+                        } else
+
+                          if (command === "instahash") {
+                            const insta = require('./features/misc-commands/instagram-handler')
+                            insta.searchHashtag(message, args)
+                          }
+
+  try {
+    const tRS = require('./features/misc-commands/translate')
+    tRS.translate(message, args, command)
+  } catch {
+    return
   }
 
 });
-// Client messaging scripts
 
 // spotify scripts
 client.on("message", (message) => {
@@ -220,82 +238,14 @@ client.on("message", (message) => {
   const spotifySearch = require('./features/spotify-commands/spotify-handler')
   const spotifyFav = require('./features/spotify-commands/favArtist')
 
-  // search up on spotify
   if (command === "sysearch") {
     spotifySearch.search(message)
   }
 
-  // add to your favorites list or playlist
   if (command === "syfav") {
     spotifyFav.checkFav(message)
   }
 
-})
-
-// random message responses/reactions
-client.on("message", (message) => {
-
-  const gamerWords = [
-    "Love you too uwu :hearts:",
-    ":hearts: :black_heart: :hearts: :black_heart: ",
-    "You can call me Rosie ;)",
-    `It's *Rosé*, but I'll forgive you ;)`,
-    `Love you too, ${message.author.displayName}!`,
-  ];
-
-  let random1 = Math.floor(Math.random() * 5);
-
-  try {
-    const responseObject = {
-      "i love you rose": gamerWords[random1],
-      "i luv you rose": gamerWords[random1],
-      "i love rose": gamerWords[random1],
-      "we love you rose": gamerWords[random1],
-      "we luv you rosé": gamerWords[random1],
-      "i love you rosé": gamerWords[random1],
-      "i luv you rosé": gamerWords[random1],
-      "i love rosé": gamerWords[random1],
-      "we love you rosé": gamerWords[random1],
-      "we luv you rosé": gamerWords[random1],
-      "thank you rose": ":hearts:",
-      "good job rose": ":hearts:",
-      "thanks rose": ":hearts:",
-      "thank you rosé": ":hearts:",
-      "good job rosé": ":hearts:",
-      "thanks rosé": ":hearts:",
-    };
-    if (message.content.toLowerCase().includes("blackpink") && !message.author.bot) {
-      message.react("💞");
-      return;
-    }
-
-    if (message.content.toLowerCase().includes("amazing") && !message.author.bot) {
-      message.channel.send("Amazing")
-      return;
-    }
-
-    if (responseObject[message.content.toLowerCase()]) {
-      message.channel.send(responseObject[message.content.toLowerCase()]);
-      return;
-    }
-
-  } catch {
-    let replies = [
-      "You are DMing a BOT. I only work in actual servers >:(",
-      "Play Jhin!",
-      "Blackpink sucks.",
-      "If you want me in your own server, let Johnnie know!",
-      "Sorry.",
-      "haha xd lemao ^^;",
-      "Consider playing smash brothers too~",
-      "You can call me Rosie ;)",
-    ];
-    let random = Math.floor(Math.random() * 8);
-    if (message.channel.type == "dm") {
-      message.author.send(replies[random]);
-      console.log(`${message.author.username}: ${message.content}`);
-    }
-  }
 })
 
 // Login to Discord
