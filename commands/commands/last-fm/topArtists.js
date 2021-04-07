@@ -21,7 +21,7 @@ module.exports = {
         });
 
         // var authURL = lfm.getAuthenticationUrl({
-        //     cb: 'http://www.last.fm/api/auth/?api_key=395b0b5e755bdae8eadeb60fae26c12c'
+        //     cb: 'http://www.last.fm/api/auth/?api_key='
         // })
 
         const member = message.member
